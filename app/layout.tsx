@@ -1,7 +1,7 @@
 import "./globals.css";
-import { Secular_One } from "next/font/google";
+import { Rubik } from "next/font/google";
 
-const secone = Secular_One({ subsets: ["hebrew"], weight: "400" });
+const rubik = Rubik({ subsets: ["hebrew"] });
 
 export const metadata = {
   title: "חשיפת קישורי דידלי",
@@ -14,8 +14,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={secone.className}>{children}</body>
+    <html lang="he" dir="rtl">
+      <body className={rubik.className}>{children}</body>
     </html>
   );
 }

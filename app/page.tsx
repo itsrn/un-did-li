@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
+import { motion } from "framer-motion";
 
 export default function Home() {
-  const [showText, setShowText] = useState(false);
   const [textBoxValue, setTextBoxValue] = useState("");
   const [outputURL, setOutputURL] = useState("");
 
@@ -14,117 +14,130 @@ export default function Home() {
     return parts[parts.length - 1];
   }
 
+  function validateDidliUrl(url: string): boolean {
+    const didliRegex = /^(https?:\/\/)?(www\.)?did\.li\/[a-zA-Z0-9-_]+$/;
+    return didliRegex.test(url);
+  }
+
   async function handleButtonClick(): Promise<void> {
-    toast("...בודק קישור", {
-      icon: "⌛",
-    });
+    if (!textBoxValue.trim()) {
+      toast.error("נא להזין קישור דידלי");
+      return;
+    }
+
     const didliPath = extractPathFromUrl(textBoxValue);
-    axios
-      .get(`/api?path=${didliPath}`)
-      .then((response) => {
-        const jsonData = response.data.result;
-        toast.success("!הקישור נמצא");
-        setOutputURL(jsonData);
-        setShowText(true);
-      })
-      .catch((error) => {
-        if (error.response) {
-          const statusCode = error.response.status;
-          if (statusCode === 400) {
-            toast.error("רשמו קישור דידלי תקין");
-          } else if (statusCode === 404) {
-            toast.error("קישור דידלי זה אינו קיים");
-          } else if (statusCode === 500) {
-            toast.error(
-              "קרתה תקלה בשרתי דידלי ולא ניתן להגיע לקישור הלא מקוצר"
-            );
-          }
-        } else {
-          toast.error(
-            "קרתה תקלה בשרת שלנו, מתנצלים. נסו שוב מאוחר יותר. אם ההודעה הזאת ממשיכה להופיעה, תפתחו אישו ברפוזיטורי בגיטהאב"
-          );
-        }
-      });
+    if (!didliPath) {
+      toast.error("נא להזין קישור דידלי תקין");
+      return;
+    }
+
+    const loadingToast = toast("...בודק קישור", { 
+      icon: "⌛",
+      duration: Infinity
+    });
+    
+    try {
+      const response = await axios.get(`/api?path=${didliPath}`);
+      const jsonData = response.data.result;
+      toast.dismiss(loadingToast);
+      toast.success("!הקישור נמצא");
+      setOutputURL(jsonData);
+    } catch (error: any) {
+      toast.dismiss(loadingToast);
+      if (error.response?.status === 400) {
+        toast.error("רשמו קישור דידלי תקין");
+      } else if (error.response?.status === 404) {
+        toast.error("קישור דידלי זה אינו קיים");
+      } else {
+        toast.error("קרתה תקלה, נסו שוב מאוחר יותר");
+      }
+    }
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-[#ffffff] text-right p-3 gap-y-3">
-      <div>
-        <Toaster reverseOrder={true} />
+    <main className="min-h-screen bg-[#FAFAFA] px-6">
+      <Toaster 
+        position="top-center"
+        toastOptions={{
+          style: {
+            direction: 'rtl',
+            background: '#1A1A1A',
+            color: '#fff',
+            padding: '16px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#fff',
+              secondary: '#1A1A1A',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#fff',
+              secondary: '#1A1A1A',
+            },
+          },
+        }}
+      />
+      
+      <div className="max-w-4xl mx-auto py-32">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="space-y-16"
+        >
+          <div className="space-y-3">
+            <h1 className="text-6xl font-light tracking-tight text-[#1A1A1A]">
+              חשיפת קישורי דידלי
+            </h1>
+            <p className="text-xl text-[#666666]">
+              גלו את היעד האמיתי של הקישור המקוצר
+            </p>
+          </div>
+
+          <div className="space-y-8">
+            <div className="relative">
+              <input
+                type="text"
+                value={textBoxValue}
+                onChange={(e) => setTextBoxValue(e.target.value)}
+                placeholder="הדביקו כאן קישור דידלי..."
+                className="w-full px-8 py-6 bg-white border-[1.5px] border-[#E5E5E5] 
+                         rounded-2xl text-lg focus:outline-none focus:border-[#1A1A1A]
+                         transition-all placeholder:text-[#999999]"
+              />
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={handleButtonClick}
+              className="w-full bg-[#1A1A1A] text-white py-6 px-8 rounded-2xl 
+                       text-lg font-light hover:bg-black transition-all"
+            >
+              בדוק קישור
+            </motion.button>
+
+            {outputURL && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-12 p-8 bg-white border-[1.5px] border-[#E5E5E5] rounded-2xl"
+              >
+                <p className="text-[#666666] mb-3">הקישור המלא (לחצו על הקישור לפתיחה):</p>
+                <a
+                  href={outputURL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#1A1A1A] hover:text-[#666666] break-all text-lg"
+                >
+                  {outputURL}
+                </a>
+              </motion.div>
+            )}
+          </div>
+        </motion.div>
       </div>
-      <header className="py-8">
-        <h1 className="text-5xl font-normal text-[#35747e]">
-          חשיפת קישורי דידלי
-        </h1>
-        <h1 className="text-2xl font-normal text-[#35747e]">
-          .האתר הזה נועד לפתור בעיה אחת ומרכזית: קישורים מקוצרים שנוצרים בדידלי
-          <br></br>
-          ,דידלי הוא שירות קיצורים ישראלי וחינמי, אבל לא כמו ביטלי ודומיו הלא
-          ישראליים
-          <br></br>
-          .ל-דידלי אין אפשרות להציג את הקישור שאליו נכנסים במקום להיכנס ישירות
-          אליו
-          <br></br>
-          טוב, באתר הזה אתם יכולים לעשות בדיוק את זה! רשמו בתיבת הטקסט שבאתר את
-          <br></br>
-          קישור הדידלי שלכם, ותקבלו את הקישור הסופי
-        </h1>
-      </header>
-      <main className="flex-grow">
-        <div className="flex flex-col items-center">
-          <input
-            type="text"
-            value={textBoxValue}
-            maxLength={25}
-            onChange={(e) => {
-              setTextBoxValue(e.target.value);
-            }}
-            placeholder="did.li/קישור-מקוצר"
-            className="py-3 px-4 block w-full border-none text-white bg-[#35747e] rounded-md text-xl focus:border-none mb-6"
-          ></input>
-          <button
-            className="bg-[#35747e] text-white px-4 py-2 rounded text-xl"
-            onClick={() => {
-              handleButtonClick();
-            }}
-          >
-            חשפו את הקישור
-          </button>
-          {showText && (
-            <>
-              <p className="mt-4 text-xl break-words text-[#35747e] text-center max-w-screen-md ">
-                :הקישור הלא מקוצר הוא
-                <br></br>
-                <code>{outputURL}</code>
-              </p>
-              <button
-                className="bg-[#35747e] text-white px-4 py-2 mt-2 rounded text-md"
-                onClick={() => {
-                  navigator.clipboard.writeText(outputURL);
-                  toast.success("!הקישור הועתק")
-                }}
-              >
-                העתיקו את הקישור
-              </button>
-              <button
-                className="bg-[#35747e] text-white px-4 py-2 mt-2 rounded text-md"
-                onClick={() => {
-                  window.open(outputURL, '_blank');
-                }}
-              >
-                פתחו את הקישור בחלון חדש
-              </button>
-            </>
-          )}
-        </div>
-      </main>
-      <footer className="bg-[#ffffff] py-4 text-[#35747e] text-xl text-center">
-        נוצר על ידי רון נוס, תשפ&#34;ג | {"  "}
-        {/* עדיף להשתמש ב&#34; במקום להשתמש במירכאות רגילות  */}
-        <a href="https://github.com/itsrn/un-did-li" target="_blank">
-          לצפייה בקוד האתר בגיטהאב
-        </a>
-      </footer>
-    </div>
+    </main>
   );
 }

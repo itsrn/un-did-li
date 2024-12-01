@@ -2,3 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  @apply antialiased bg-[#FAFAFA];
+}
+
+* {
+  @apply transition-all duration-200;
+}
+
+::selection {
+  @apply bg-[#1A1A1A] text-white;
+}

@@ -29,12 +29,12 @@ export async function GET(request: Request, response: Response) {
       const axiosError = error as AxiosError;
       if (axiosError.response && axiosError.response.status === 404) {
         return NextResponse.json(
-          { result: "This did.li link does not exist" },
+          { result: "Link doesn't exist" },
           { status: 404 }
         );
       } else {
         return NextResponse.json(
-          { result: "There was an error in the server" },
+          { result: "Server error" },
           { status: 500 }
         );
       }
